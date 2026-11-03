@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Review import · internship-finder{% endblock %}
+{% block content %}
+<p><a href="/import" class="muted">← Choose a different file</a></p>
+<h1>Review import</h1>
+<p class="muted">From <strong>{{ summary.source_name }}</strong> —
+  {{ summary.new_companies }} new compan{{ 'y' if summary.new_companies == 1 else 'ies' }},
+  {{ summary.existing_companies }} matched to existing,
+  {{ summary.total_events }} new timeline event{{ '' if summary.total_events == 1 else 's' }}.
+</p>
+
+{% if summary.ai_used %}
+<div class="flash">AI-assisted: the local LLM mapped columns the rules didn't recognise.</div>
+{% elif summary.ai_error %}
+<div class="flash warn">AI column-mapping unavailable ({{ summary.ai_error }}) — used rule-based matching only.</div>
+{% endif %}
+
+{% if summary.unmapped %}
+<p class="muted small">Ignored columns (no matching field): {{ summary.unmapped | join(', ') }}.</p>
+{% endif %}
+{% if summary.skipped_rows %}
+<p class="muted small">{{ summary.skipped_rows }} row(s) before the first company name were skipped.</p>
+{% endif %}
+
+<table class="table">
+  <thead>
+    <tr><th>Company</th><th></th><th>Status</th><th>Email</th><th>Events</th></tr>
+  </thead>
+  <tbody>
+    {% for r in summary.rows %}
+    <tr>
+      <td>{{ r.name }}{% if r.domain %}<br><span class="muted small">{{ r.domain }}</span>{% endif %}</td>
+      <td>
+        {% if r.is_new %}<span class="tag">new</span>
+        {% else %}<span class="tag">existing</span>{% endif %}
+      </td>
+      <td><span class="badge">{{ r.status | label }}</span></td>
+      <td>{{ r.email or '—' }}</td>
+      <td>
+        +{{ r.events_add }}
+        {% if r.events_dup %}<span class="muted small">({{ r.events_dup }} dup skipped)</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="muted small">
+  Existing companies keep their current status and notes; only new emails,
+  contacts and timeline events are added. Duplicate events (same date, type and
+  text) are skipped, so re-importing the same sheet is safe.
+</p>
+
+<div class="actions">
+  <form method="post" action="/import/confirm">
+    <input type="hidden" name="token" value="{{ token }}">
+    <button type="submit">Import {{ summary.rows | length }} compan{{ 'y' if summary.rows|length == 1 else 'ies' }}</button>
+  </form>
+  <form method="post" action="/import/cancel">
+    <input type="hidden" name="token" value="{{ token }}">
+    <button type="submit" class="btn-danger">Discard</button>
+  </form>
+</div>
+{% endblock %}

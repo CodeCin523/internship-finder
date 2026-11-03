@@ -62,10 +62,7 @@ class OllamaBackend:
         self.base_url = base_url.rstrip("/")
         self.model = model
 
-    def correct(self, text: str, language: str) -> LLMResult:
-        if not text.strip():
-            return LLMResult(text=text, ok=False, error="Nothing to correct.")
-        prompt = f"{_instruction(language)}\n\n--- COURRIEL / EMAIL ---\n{text}"
+    def _generate(self, prompt: str) -> LLMResult:
         payload = json.dumps(
             {"model": self.model, "prompt": prompt, "stream": False}
         ).encode("utf-8")
@@ -79,17 +76,32 @@ class OllamaBackend:
                 data = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")[:200]
-            return LLMResult(text=text, ok=False, error=f"Ollama HTTP {exc.code}: {detail}")
+            return LLMResult(text="", ok=False, error=f"Ollama HTTP {exc.code}: {detail}")
         except Exception as exc:
             return LLMResult(
-                text=text,
+                text="",
                 ok=False,
                 error=f"Could not reach Ollama at {self.base_url} ({type(exc).__name__}).",
             )
         out = _clean(data.get("response") or "")
         if not out:
-            return LLMResult(text=text, ok=False, error="Empty response from the model.")
+            return LLMResult(text="", ok=False, error="Empty response from the model.")
         return LLMResult(text=out, ok=True)
+
+    def correct(self, text: str, language: str) -> LLMResult:
+        if not text.strip():
+            return LLMResult(text=text, ok=False, error="Nothing to correct.")
+        prompt = f"{_instruction(language)}\n\n--- COURRIEL / EMAIL ---\n{text}"
+        result = self._generate(prompt)
+        if not result.ok:
+            result.text = text  # fall back to the original on failure
+        return result
+
+    def complete(self, prompt: str) -> LLMResult:
+        """Free-form generation (no correction wrapper). Used for data extraction."""
+        if not prompt.strip():
+            return LLMResult(text="", ok=False, error="Empty prompt.")
+        return self._generate(prompt)
 
 
 # Cache loaded models by path — loading a GGUF is expensive.
@@ -102,41 +114,54 @@ class LlamaCppBackend:
     def __init__(self, model_path: str) -> None:
         self.model_path = model_path
 
-    def correct(self, text: str, language: str) -> LLMResult:
-        if not text.strip():
-            return LLMResult(text=text, ok=False, error="Nothing to correct.")
+    def _load(self):
+        """Return (llm, error). The model is cached across calls."""
         try:
             from llama_cpp import Llama
         except ImportError:
-            return LLMResult(
-                text=text,
-                ok=False,
-                error="llama-cpp-python is not installed. Run: pip install llama-cpp-python",
-            )
+            return None, "llama-cpp-python is not installed. Run: pip install llama-cpp-python"
         if not self.model_path or not os.path.exists(self.model_path):
-            return LLMResult(
-                text=text,
-                ok=False,
-                error="Set a valid .gguf path in Settings (llama-cpp model path).",
-            )
-        try:
-            llm = _LLAMA_CACHE.get(self.model_path)
-            if llm is None:
+            return None, "Set a valid .gguf path in Settings (llama-cpp model path)."
+        llm = _LLAMA_CACHE.get(self.model_path)
+        if llm is None:
+            try:
                 llm = Llama(model_path=self.model_path, n_ctx=4096, verbose=False)
-                _LLAMA_CACHE[self.model_path] = llm
-            result = llm.create_chat_completion(
-                messages=[
-                    {"role": "system", "content": _instruction(language)},
-                    {"role": "user", "content": text},
-                ],
-                temperature=0.2,
-            )
+            except Exception as exc:
+                return None, f"llama-cpp error: {type(exc).__name__}: {exc}"
+            _LLAMA_CACHE[self.model_path] = llm
+        return llm, ""
+
+    def _chat(self, messages: list[dict]) -> LLMResult:
+        llm, error = self._load()
+        if llm is None:
+            return LLMResult(text="", ok=False, error=error)
+        try:
+            result = llm.create_chat_completion(messages=messages, temperature=0.2)
             out = _clean(result["choices"][0]["message"]["content"] or "")
         except Exception as exc:
-            return LLMResult(text=text, ok=False, error=f"llama-cpp error: {type(exc).__name__}: {exc}")
+            return LLMResult(text="", ok=False, error=f"llama-cpp error: {type(exc).__name__}: {exc}")
         if not out:
-            return LLMResult(text=text, ok=False, error="Empty response from the model.")
+            return LLMResult(text="", ok=False, error="Empty response from the model.")
         return LLMResult(text=out, ok=True)
+
+    def correct(self, text: str, language: str) -> LLMResult:
+        if not text.strip():
+            return LLMResult(text=text, ok=False, error="Nothing to correct.")
+        result = self._chat(
+            [
+                {"role": "system", "content": _instruction(language)},
+                {"role": "user", "content": text},
+            ]
+        )
+        if not result.ok:
+            result.text = text  # fall back to the original on failure
+        return result
+
+    def complete(self, prompt: str) -> LLMResult:
+        """Free-form generation (no correction wrapper). Used for data extraction."""
+        if not prompt.strip():
+            return LLMResult(text="", ok=False, error="Empty prompt.")
+        return self._chat([{"role": "user", "content": prompt}])
 
 
 def get_backend(settings: Settings):

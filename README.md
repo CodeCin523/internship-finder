@@ -19,7 +19,7 @@ never leaves it.
 | **M2** | Templates + draft generation + LLM correction | ✅ done |
 | **M3** | Microsoft Graph login + sending | ✅ done |
 | **M4** | Reply ingestion, follow-up engine, llama-cpp backend, Docker | ✅ done |
-| **M5** | Company domain + Excel export/import | 🚧 export + domain done; AI import next |
+| **M5** | Company domain + Excel export/import | ✅ done |
 
 ---
 
@@ -69,9 +69,11 @@ Go to **http://127.0.0.1:8000** in your browser.
   rejection). Missing defaults are re-added on startup; edit or delete freely.
 - **✉ Compose email** (on a company page) fills a template from that company's
   data, runs it through your local LLM for French polishing, and shows a review
-  screen (edit / regenerate / switch template). Saving stores it as a *draft* on
-  the timeline — nothing is sent yet. If the LLM isn't running, you still get the
-  filled template and a notice to start it and hit **Regenerate**.
+  screen. There you can edit the text and **Correct my edits with LLM** to
+  re-polish your current wording (edits kept), or **Reload from template** to
+  start over from the template. Saving stores it as a *draft* on the timeline —
+  nothing is sent yet. If the LLM isn't running, you still get the filled
+  template and a notice to start it and click **Correct my edits with LLM**.
 - **Send** a saved draft from the company timeline with **Send now** (requires a
   connected Microsoft account — see below). The CV and any per-company letter are
   attached automatically, and the draft is marked **sent**.
@@ -85,7 +87,16 @@ Go to **http://127.0.0.1:8000** in your browser.
   first email — informational for now, and the basis for future email-finding.
 - **⭳ Export .xlsx** (dashboard) writes a single grouped sheet matching your
   familiar columns: the company name appears once with one row per timeline event
-  beneath it. (AI-assisted *import* of such sheets is the next step.)
+  beneath it.
+- **⭱ Import .xlsx** (dashboard) reads such a sheet back in. Columns are matched
+  by name — the familiar French headers and this app's own export are recognised
+  without any model; for any header it doesn't know, your local LLM maps it to the
+  right field (if the LLM is off, the rule-based matching still runs). French
+  status/communication wording is translated back to the pipeline stages. You get
+  a **review screen** showing every company (new vs. matched to an existing one)
+  and how many timeline events will be added before anything is saved. Re-importing
+  the same sheet is safe: existing companies keep their status and notes, and
+  duplicate events (same date, type and text) are skipped.
 - **Settings** lets you fill in your name, signature, sender email, global CV,
   LLM backend, and follow-up cadence. The **Account** page connects your Hotmail.
 

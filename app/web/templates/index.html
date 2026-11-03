@@ -6,6 +6,7 @@
   <div class="actions">
     <form method="post" action="/sync"><button type="submit" class="btn-secondary">⟳ Sync inbox</button></form>
     <a class="btn-secondary" href="/export">⭳ Export .xlsx</a>
+    <a class="btn-secondary" href="/import">⭱ Import .xlsx</a>
     <a class="btn" href="/companies/new">+ New company</a>
   </div>
 </div>
@@ -15,6 +16,9 @@
 {% endif %}
 {% if request.query_params.get('sync_error') %}
 <div class="flash warn">Sync failed: {{ request.query_params.get('sync_error') }}</div>
+{% endif %}
+{% if request.query_params.get('imported') %}
+<div class="flash">Import done — {{ request.query_params.get('created', 0) }} new, {{ request.query_params.get('updated', 0) }} updated, {{ request.query_params.get('events_added', 0) }} event(s) added{% if request.query_params.get('events_skipped') and request.query_params.get('events_skipped') != '0' %}, {{ request.query_params.get('events_skipped') }} duplicate(s) skipped{% endif %}.</div>
 {% endif %}
 
 {% if followups %}

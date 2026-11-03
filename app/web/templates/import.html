@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Import .xlsx · internship-finder{% endblock %}
+{% block content %}
+<p><a href="/" class="muted">← All companies</a></p>
+<h1>Import a spreadsheet</h1>
+
+{% if error %}
+<div class="flash warn">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="/import" enctype="multipart/form-data" class="form card">
+  <label>Spreadsheet (.xlsx)
+    <input type="file" name="file" accept=".xlsx" required autofocus>
+  </label>
+  <p class="muted small">
+    Upload a sheet in your usual layout — one company per block, with its name on
+    the first row and one row per interaction beneath it (the same shape the
+    <a href="/export">export</a> produces). Columns are matched by name; your
+    local LLM helps place any it doesn't recognise. You'll review everything
+    before anything is saved.
+  </p>
+  <div class="actions">
+    <button type="submit">Preview import</button>
+    <a href="/" class="btn-secondary">Cancel</a>
+  </div>
+</form>
+{% endblock %}

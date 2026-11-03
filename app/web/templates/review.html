@@ -10,7 +10,7 @@
 <div class="flash warn">
   LLM unavailable — showing the filled template unchanged.
   {% if llm_error %}<span class="small">({{ llm_error }})</span>{% endif %}
-  Start your model and click <strong>Regenerate</strong>.
+  Start your model and click <strong>Correct my edits with LLM</strong>.
 </div>
 {% endif %}
 
@@ -43,10 +43,15 @@
 
   <div class="actions">
     <button type="submit" name="action" value="save">Save as draft</button>
-    <button type="submit" name="action" value="regenerate" class="btn-secondary">Regenerate with LLM</button>
+    <button type="submit" name="action" value="regenerate" class="btn-secondary">Correct my edits with LLM</button>
     <a href="/companies/{{ company.id }}" class="btn-secondary">Discard</a>
   </div>
 </form>
 
+<p class="muted small">
+  <strong>Correct my edits with LLM</strong> re-polishes the text above as it is
+  now (your edits are kept); <strong>Reload from template</strong> discards your
+  edits and refills from the selected template.
+</p>
 <p class="muted small">Template placeholders: {{ placeholders | join(', ') }}</p>
 {% endblock %}
