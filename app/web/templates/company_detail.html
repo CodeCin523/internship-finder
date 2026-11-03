@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}{{ company.name }} · internship-finder{% endblock %}
+{% block content %}
+<p><a href="/" class="muted">← All companies</a></p>
+
+{% if request.query_params.get('draft') %}
+<div class="flash">Draft saved to the timeline (not sent).</div>
+{% endif %}
+{% if request.query_params.get('sent') %}
+<div class="flash">Email sent and logged to the timeline.</div>
+{% endif %}
+{% if request.query_params.get('send_error') %}
+<div class="flash warn">Could not send: {{ request.query_params.get('send_error') }}</div>
+{% endif %}
+
+<div class="page-head">
+  <div>
+    <h1>{{ company.name }}</h1>
+    <span class="badge">{{ company.status.value | label }}</span>
+  </div>
+  <a class="btn" href="/companies/{{ company.id }}/compose">✉ Compose email</a>
+</div>
+
+<div class="grid">
+  <section class="card">
+    <h2>Details</h2>
+    <form method="post" action="/companies/{{ company.id }}/edit" class="form">
+      <label>Name
+        <input name="name" value="{{ company.name }}" required>
+      </label>
+      <label>Domain / website <span class="muted">(e.g. acme.com)</span>
+        <input name="domain" value="{{ company.domain }}" placeholder="company.com">
+      </label>
+      <label>Status
+        <select name="status">
+          {% for s in statuses %}
+          <option value="{{ s.value }}" {% if s == company.status %}selected{% endif %}>{{ s.value | label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Follow-up override <span class="muted">(days, optional)</span>
+        <input type="number" name="followup_days_override" min="1" value="{{ company.followup_days_override or '' }}">
+      </label>
+      <label>Notes
+        <textarea name="notes" rows="4">{{ company.notes }}</textarea>
+      </label>
+      <button type="submit">Save</button>
+    </form>
+    <form method="post" action="/companies/{{ company.id }}/delete"
+          onsubmit="return confirm('Delete this company and all of its data?');">
+      <button type="submit" class="btn-danger">Delete company</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Email addresses</h2>
+    <ul class="list">
+      {% for e in company.emails %}
+      <li>
+        <span>{{ e.address }}{% if e.is_primary %} <span class="tag">primary</span>{% endif %}</span>
+        <span class="row-actions">
+          {% if not e.is_primary %}
+          <form method="post" action="/emails/{{ e.id }}/primary"><button class="link">make primary</button></form>
+          {% endif %}
+          <form method="post" action="/emails/{{ e.id }}/delete"><button class="link danger">remove</button></form>
+        </span>
+      </li>
+      {% else %}
+      <li class="muted">None yet.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/companies/{{ company.id }}/emails" class="inline-form">
+      <input type="email" name="address" placeholder="name@company.com" required>
+      <label class="check"><input type="checkbox" name="is_primary"> primary</label>
+      <button type="submit">Add</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Name variants</h2>
+    <p class="muted small">Alternate spellings — used later to match inbound replies to this company.</p>
+    <ul class="list">
+      {% for v in company.variants %}
+      <li>
+        <span>{{ v.variant }}</span>
+        <span class="row-actions">
+          <form method="post" action="/variants/{{ v.id }}/delete"><button class="link danger">remove</button></form>
+        </span>
+      </li>
+      {% else %}
+      <li class="muted">None yet.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/companies/{{ company.id }}/variants" class="inline-form">
+      <input name="variant" placeholder="Alternate spelling" required>
+      <button type="submit">Add</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Contacts</h2>
+    <ul class="list">
+      {% for p in company.contacts %}
+      <li>
+        <div>
+          <strong>{{ p.name }}</strong>{% if p.role %} — {{ p.role }}{% endif %}
+          <div class="muted small">{{ p.email }}{% if p.phone %} · {{ p.phone }}{% endif %}</div>
+          {% if p.notes %}<div class="small">{{ p.notes }}</div>{% endif %}
+        </div>
+        <span class="row-actions">
+          <form method="post" action="/contacts/{{ p.id }}/delete"><button class="link danger">remove</button></form>
+        </span>
+      </li>
+      {% else %}
+      <li class="muted">None yet.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/companies/{{ company.id }}/contacts" class="form">
+      <input name="name" placeholder="Name" required>
+      <input name="role" placeholder="Role (e.g. RH, manager)">
+      <input type="email" name="email" placeholder="Email">
+      <input name="phone" placeholder="Phone">
+      <textarea name="notes" rows="2" placeholder="Notes"></textarea>
+      <button type="submit">Add contact</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Documents</h2>
+    <p class="muted small">Your global CV is managed in <a href="/settings">Settings</a>
+      and attached automatically when sending.</p>
+    <h3 class="sub">Recommendation letter <span class="muted">(optional, this company)</span></h3>
+    {% if letter %}
+    <p>{{ letter.label }}
+      <form method="post" action="/attachments/{{ letter.id }}/delete" class="inline-del">
+        <button class="link danger">remove</button>
+      </form>
+    </p>
+    {% else %}
+    <p class="muted">None.</p>
+    {% endif %}
+    <form method="post" action="/companies/{{ company.id }}/letter" enctype="multipart/form-data" class="inline-form">
+      <input type="file" name="file" required>
+      <button type="submit">Upload letter</button>
+    </form>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Timeline</h2>
+  <form method="post" action="/companies/{{ company.id }}/events" class="inline-form timeline-form">
+    <select name="event_type">
+      {% for t in event_types %}
+      <option value="{{ t.value }}">{{ t.value | label }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="date">
+    <input name="subject" placeholder="Subject (optional)">
+    <input name="body" placeholder="What happened?">
+    <button type="submit">Add entry</button>
+  </form>
+
+  <ul class="timeline">
+    {% for ev in events %}
+    <li>
+      <div class="ev-head">
+        <span class="tag">{{ ev.type.value | label }}</span>
+        {% if ev.status.value == 'pending' %}<span class="tag draft">draft</span>{% endif %}
+        {% if ev.status.value == 'sent' %}<span class="tag sent">sent</span>{% endif %}
+        <span class="muted small">{{ ev.created_at | dt }}</span>
+        <form method="post" action="/events/{{ ev.id }}/delete" class="ev-del">
+          <button class="link danger">delete</button>
+        </form>
+      </div>
+      {% if ev.subject %}<div><strong>{{ ev.subject }}</strong></div>{% endif %}
+      {% if ev.body %}<div class="ev-body">{{ ev.body }}</div>{% endif %}
+      {% if ev.type.value == 'outbound_email' and ev.status.value == 'pending' %}
+      <form method="post" action="/events/{{ ev.id }}/send" class="send-form"
+            onsubmit="return confirm('Send this email now?');">
+        <button type="submit">Send now</button>
+      </form>
+      {% endif %}
+    </li>
+    {% else %}
+    <li class="muted">No interactions logged yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

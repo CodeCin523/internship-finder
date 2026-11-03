@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# App data (local database, CV, letters, token cache)
+data/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+CV.pdf
+LettreMotivation.pdf

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if template else 'New' }} template · internship-finder{% endblock %}
+{% block content %}
+<p><a href="/templates" class="muted">← Templates</a></p>
+<h1>{{ 'Edit template' if template else 'New template' }}</h1>
+
+<form method="post" action="{{ action_url }}" class="form card">
+  <label>Name
+    <input name="name" value="{{ template.name if template else '' }}" required autofocus>
+  </label>
+  <label>Category
+    <select name="category">
+      {% for c in categories %}
+      <option value="{{ c.value }}" {% if template and template.category == c %}selected{% endif %}>{{ c.value | label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Language
+    <select name="language">
+      <option value="fr" {% if not template or template.language == 'fr' %}selected{% endif %}>Français</option>
+      <option value="en" {% if template and template.language == 'en' %}selected{% endif %}>English</option>
+    </select>
+  </label>
+  <label>Subject
+    <input name="subject" value="{{ template.subject if template else '' }}">
+  </label>
+  <label>Body
+    <textarea name="body" rows="16">{{ template.body if template else '' }}</textarea>
+  </label>
+  <p class="muted small">Placeholders: {{ placeholders | join(', ') }}</p>
+  <div class="actions">
+    <button type="submit">Save</button>
+    <a href="/templates" class="btn-secondary">Cancel</a>
+  </div>
+</form>
+{% endblock %}

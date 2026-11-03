@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Templates · internship-finder{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Templates</h1>
+  <a class="btn" href="/templates/new">+ New template</a>
+</div>
+
+{% for cat, items in grouped.items() %}
+<section class="card">
+  <h2>{{ cat.value | label }}</h2>
+  {% if items %}
+  <ul class="list">
+    {% for t in items %}
+    <li>
+      <div>
+        <strong>{{ t.name }}</strong> <span class="muted small">· {{ t.language }}</span>
+        <div class="muted small">{{ t.subject }}</div>
+      </div>
+      <span class="row-actions">
+        <a class="link" href="/templates/{{ t.id }}/edit">edit</a>
+        <form method="post" action="/templates/{{ t.id }}/delete"
+              onsubmit="return confirm('Delete this template?');">
+          <button class="link danger">delete</button>
+        </form>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">None.</p>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

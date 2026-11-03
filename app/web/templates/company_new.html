@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}New company · internship-finder{% endblock %}
+{% block content %}
+<p><a href="/" class="muted">← All companies</a></p>
+<h1>New company</h1>
+
+<form method="post" action="/companies" class="form card">
+  <label>Name
+    <input name="name" required autofocus>
+  </label>
+  <label>Primary email <span class="muted">(optional)</span>
+    <input type="email" name="email" placeholder="recrutement@company.com">
+  </label>
+  <label>Domain / website <span class="muted">(optional — auto-filled from the email)</span>
+    <input name="domain" placeholder="company.com">
+  </label>
+  <label>Status
+    <select name="status">
+      {% for s in statuses %}
+      <option value="{{ s.value }}">{{ s.value | label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Notes
+    <textarea name="notes" rows="3"></textarea>
+  </label>
+  <div class="actions">
+    <button type="submit">Create</button>
+    <a href="/" class="btn-secondary">Cancel</a>
+  </div>
+</form>
+{% endblock %}

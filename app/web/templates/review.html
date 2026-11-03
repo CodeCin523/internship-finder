@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Review draft · {{ company.name }}{% endblock %}
+{% block content %}
+<p><a href="/companies/{{ company.id }}" class="muted">← {{ company.name }}</a></p>
+<h1>Review draft — {{ company.name }}</h1>
+
+{% if llm_ok %}
+<div class="flash">Polished by the local model. Review and edit before saving.</div>
+{% else %}
+<div class="flash warn">
+  LLM unavailable — showing the filled template unchanged.
+  {% if llm_error %}<span class="small">({{ llm_error }})</span>{% endif %}
+  Start your model and click <strong>Regenerate</strong>.
+</div>
+{% endif %}
+
+<form method="post" action="/companies/{{ company.id }}/compose" class="form card">
+  <input type="hidden" name="contact_id" value="{{ selected_contact_id or '' }}">
+
+  <div class="inline-form">
+    <label>Template
+      <select name="template_id">
+        {% for cat, items in all_templates_grouped.items() %}
+          {% if items %}
+          <optgroup label="{{ cat.value | label }}">
+            {% for t in items %}
+            <option value="{{ t.id }}" {% if t.id == selected_template_id %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+          </optgroup>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" name="action" value="refill" class="btn-secondary">Reload from template</button>
+  </div>
+
+  <label>Subject
+    <input name="subject" value="{{ subject }}">
+  </label>
+  <label>Body
+    <textarea name="body" rows="18">{{ body }}</textarea>
+  </label>
+
+  <div class="actions">
+    <button type="submit" name="action" value="save">Save as draft</button>
+    <button type="submit" name="action" value="regenerate" class="btn-secondary">Regenerate with LLM</button>
+    <a href="/companies/{{ company.id }}" class="btn-secondary">Discard</a>
+  </div>
+</form>
+
+<p class="muted small">Template placeholders: {{ placeholders | join(', ') }}</p>
+{% endblock %}

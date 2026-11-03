@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Microsoft account · internship-finder{% endblock %}
+{% block content %}
+<h1>Microsoft account</h1>
+
+{% if request.query_params.get('need_login') %}
+<div class="flash warn">Connect your Microsoft account before sending.</div>
+{% endif %}
+
+{% if not client_id %}
+<div class="card">
+  <p>No <strong>Azure application (client) ID</strong> is set yet. Sending from Hotmail
+  needs a one-time, free app registration. It takes about 10 minutes:</p>
+  <ol class="steps">
+    <li>Open the <a href="https://entra.microsoft.com" target="_blank" rel="noopener">Microsoft Entra admin center</a> → <em>App registrations</em> → <em>New registration</em>.</li>
+    <li>Name it (e.g. <em>internship-finder</em>). Under <em>Supported account types</em> pick <strong>Personal Microsoft accounts only</strong>, then <em>Register</em>.</li>
+    <li>Go to <em>Authentication</em> → <em>Add a platform</em> → <em>Mobile and desktop applications</em>, tick <code>https://login.microsoftonline.com/common/oauth2/nativeclient</code>, set <em>Allow public client flows</em> to <strong>Yes</strong>, and <em>Save</em>.</li>
+    <li>Go to <em>API permissions</em> → <em>Add a permission</em> → <em>Microsoft Graph</em> → <em>Delegated permissions</em> → add <code>Mail.Send</code> and <code>Mail.Read</code>.</li>
+    <li>Copy the <em>Application (client) ID</em> from the <em>Overview</em> page and paste it into <a href="/settings">Settings</a>, then come back here.</li>
+  </ol>
+</div>
+
+{% elif account %}
+<div class="card">
+  <p>Connected as <strong>{{ account }}</strong>.</p>
+  <form method="post" action="/graph/logout">
+    <button type="submit" class="btn-danger">Sign out</button>
+  </form>
+</div>
+
+{% elif status == 'pending' and flow %}
+<meta http-equiv="refresh" content="4">
+<div class="card">
+  <h2>Finish signing in</h2>
+  <p>On another page, open:</p>
+  <p><a href="{{ flow.verification_uri }}" target="_blank" rel="noopener">{{ flow.verification_uri }}</a></p>
+  <p>…and enter this code:</p>
+  <p class="code-box">{{ flow.user_code }}</p>
+  <p class="muted small">This page refreshes automatically and will update once you approve access.</p>
+</div>
+
+{% else %}
+<div class="card">
+  {% if status == 'error' and error %}<div class="flash warn">{{ error }}</div>{% endif %}
+  <p>Client ID is configured. Connect your Hotmail account to enable sending.</p>
+  <form method="post" action="/graph/login">
+    <button type="submit">Connect Microsoft account</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

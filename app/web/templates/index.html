@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · internship-finder{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Companies <span class="muted">({{ count }})</span></h1>
+  <div class="actions">
+    <form method="post" action="/sync"><button type="submit" class="btn-secondary">⟳ Sync inbox</button></form>
+    <a class="btn-secondary" href="/export">⭳ Export .xlsx</a>
+    <a class="btn" href="/companies/new">+ New company</a>
+  </div>
+</div>
+
+{% if request.query_params.get('synced') is not none %}
+<div class="flash">Inbox synced — {{ request.query_params.get('synced') }} new repl{{ 'y' if request.query_params.get('synced') == '1' else 'ies' }} logged.</div>
+{% endif %}
+{% if request.query_params.get('sync_error') %}
+<div class="flash warn">Sync failed: {{ request.query_params.get('sync_error') }}</div>
+{% endif %}
+
+{% if followups %}
+<section class="card followups">
+  <h2>Needs follow-up <span class="muted">({{ followups|length }})</span></h2>
+  <ul class="list">
+    {% for f in followups %}
+    <li>
+      <div>
+        <a href="/companies/{{ f.company.id }}">{{ f.company.name }}</a>
+        <span class="muted small">· no reply for {{ f.days }} day{{ 's' if f.days != 1 else '' }}</span>
+      </div>
+      <span class="row-actions">
+        <a class="link" href="/companies/{{ f.company.id }}/compose">compose relance</a>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if rows %}
+<table class="table">
+  <thead>
+    <tr><th>Name</th><th>Status</th><th>Primary email</th><th>Last activity</th></tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td><a href="/companies/{{ r.company.id }}">{{ r.company.name }}</a></td>
+      <td><span class="badge">{{ r.company.status.value | label }}</span></td>
+      <td>{{ r.primary_email or '—' }}</td>
+      <td>{{ r.last_activity | dt or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">
+  <p>No companies yet.</p>
+  <p class="muted">Add your first one with “+ New company”.</p>
+</div>
+{% endif %}
+{% endblock %}

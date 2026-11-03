@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Compose · {{ company.name }}{% endblock %}
+{% block content %}
+<p><a href="/companies/{{ company.id }}" class="muted">← {{ company.name }}</a></p>
+<h1>Compose email — {{ company.name }}</h1>
+
+{% if not has_templates %}
+<div class="empty">
+  <p>No templates yet.</p>
+  <p><a class="btn" href="/templates/new">Create a template</a></p>
+</div>
+{% else %}
+<form method="post" action="/companies/{{ company.id }}/compose" class="form card">
+  <input type="hidden" name="action" value="generate">
+  <label>Template
+    <select name="template_id" required>
+      {% for cat, items in grouped.items() %}
+        {% if items %}
+        <optgroup label="{{ cat.value | label }}">
+          {% for t in items %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+        </optgroup>
+        {% endif %}
+      {% endfor %}
+    </select>
+  </label>
+  <label>Contact <span class="muted">(optional — fills {contact_name})</span>
+    <select name="contact_id">
+      <option value="">— none (Madame, Monsieur) —</option>
+      {% for p in contacts %}
+      <option value="{{ p.id }}">{{ p.name }}{% if p.role %} ({{ p.role }}){% endif %}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Generate draft →</button>
+</form>
+{% endif %}
+{% endblock %}

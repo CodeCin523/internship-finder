@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="{{ lang | default('en') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}internship-finder{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <!-- HTMX loaded from CDN. For fully offline use, vendor it into /static (see README). -->
+  <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+  <nav class="nav">
+    <a class="brand" href="/">internship-finder</a>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/templates">Templates</a>
+      <a href="/graph">Account</a>
+      <a href="/settings">Settings</a>
+    </div>
+  </nav>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
